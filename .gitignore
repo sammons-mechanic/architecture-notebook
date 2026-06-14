@@ -1,0 +1,8 @@
+node_modules/
+data/
+!data/.gitkeep
+web/dist/
+shots/
+.DS_Store
+*.log
+worktree-description.md

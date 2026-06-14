@@ -1,0 +1,1631 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Architecture Notebook — design mockup</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@300..600&display=swap"
+  rel="stylesheet"
+/>
+<style>
+  :root {
+    /* surfaces — cool warm-neutrals (stone) */
+    --bg:            #fafaf9;
+    --bg-soft:       #f5f5f4;
+    --bg-strong:     #ebebe9;
+    --bg-pane:       #ffffff;
+
+    --border:        #e7e5e4;
+    --border-strong: #d6d3d1;
+    --border-ink:    #1c1917;
+
+    --text:          #1c1917;
+    --text-soft:     #44403c;
+    --text-muted:    #78716c;
+    --text-faint:    #a8a29e;
+
+    /* single accent — cobalt for references / active */
+    --accent:        #1d4ed8;
+    --accent-soft:   #3b82f6;
+    --accent-bg:     #eff6ff;
+    --accent-edge:   #bfdbfe;
+
+    /* type dots — modern, distinct */
+    --type-overview:    #1c1917;
+    --type-ui:          #0891b2;
+    --type-service:     #16a34a;
+    --type-integration: #7c3aed;
+    --type-cloud:       #ea580c;
+    --type-infra:       #525252;
+    --type-ingress:     #dc2626;
+    --type-egress:      #ca8a04;
+    --type-domain:      #0284c7;
+    --type-secret:      #9333ea;
+    --type-auth:        #0d9488;
+
+    --sans: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --mono: 'Geist Mono', ui-monospace, 'SF Mono', monospace;
+
+    --measure: 42rem;
+    --masthead-h: 56px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    font-feature-settings: 'cv11', 'ss03', 'ss01';
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection { background: var(--accent-bg); color: var(--text); }
+
+  /* ───────────── masthead ───────────── */
+  .masthead {
+    position: sticky; top: 0; z-index: 40;
+    height: var(--masthead-h);
+    background: color-mix(in oklab, var(--bg) 88%, transparent);
+    backdrop-filter: blur(10px) saturate(1.1);
+    -webkit-backdrop-filter: blur(10px) saturate(1.1);
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 288px 1fr auto;
+    align-items: center;
+    padding: 0 1.25rem;
+    gap: 1.5rem;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 0.55rem;
+    font-size: 0.92rem;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+  .brand .mark {
+    width: 22px; height: 22px;
+    border: 1.5px solid var(--text);
+    background: var(--bg-soft);
+    position: relative;
+  }
+  .brand .mark::after {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border: 1px solid var(--text);
+    border-bottom: 0; border-right: 0;
+  }
+  .brand .rev {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-left: 0.25rem;
+    padding: 0.15rem 0.4rem;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+  .crumb {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .crumb b { color: var(--text); font-weight: 500; }
+  .crumb .sep { margin: 0 0.45rem; color: var(--text-faint); }
+  .crumb .pin { color: var(--text-faint); margin-right: 0.4rem; }
+
+  .view-toggle {
+    display: inline-flex;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .view-toggle button {
+    background: transparent;
+    border: 0;
+    padding: 0.32rem 0.85rem;
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .view-toggle button:hover { color: var(--text); }
+  .view-toggle button.active {
+    background: var(--bg-pane);
+    color: var(--text);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px var(--border);
+  }
+
+  /* ───────────── view shell ───────────── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ───────────── READ VIEW ───────────── */
+  .read-shell {
+    display: grid;
+    grid-template-columns: 288px minmax(0, 1fr);
+    min-height: calc(100vh - var(--masthead-h));
+    transition: grid-template-columns 0.32s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .read-shell.panel {
+    grid-template-columns: 288px minmax(0, 1fr) 420px;
+  }
+
+  /* ─────── sidebar tree ─────── */
+  aside.tree {
+    border-right: 1px solid var(--border);
+    background: var(--bg);
+    padding: 1.1rem 0.5rem 6rem 0.85rem;
+    position: sticky; top: var(--masthead-h);
+    align-self: start;
+    max-height: calc(100vh - var(--masthead-h));
+    overflow-y: auto;
+  }
+  .tree-filter {
+    position: relative;
+    margin-bottom: 0.8rem;
+    padding: 0 0.25rem;
+  }
+  .tree-filter input {
+    width: 100%;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.4rem 0.65rem 0.4rem 1.85rem;
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .tree-filter input:focus {
+    background: var(--bg-pane);
+    border-color: var(--border-strong);
+  }
+  .tree-filter::before {
+    content: '⌕';
+    position: absolute;
+    left: 0.7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-faint);
+    font-size: 0.8rem;
+    font-family: var(--mono);
+  }
+  .tree-filter .shortcut {
+    position: absolute;
+    right: 0.55rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--text-faint);
+    padding: 1px 4px;
+    background: var(--bg-pane);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+
+  .tree-eyebrow {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-faint);
+    padding: 0.7rem 0.35rem 0.5rem;
+    display: flex; justify-content: space-between;
+  }
+  .tree-eyebrow b { color: var(--text-muted); font-weight: 500; }
+
+  .tree ul { list-style: none; }
+  .tree li > .row {
+    display: grid;
+    grid-template-columns: 14px 1fr auto;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.32rem 0.55rem;
+    cursor: pointer;
+    color: var(--text-soft);
+    font-size: 0.84rem;
+    line-height: 1.3;
+    border-radius: 5px;
+    margin: 1px 0;
+    transition: background 0.1s, color 0.1s;
+  }
+  .tree li > .row:hover { background: var(--bg-soft); color: var(--text); }
+  .tree li > .row.current {
+    background: var(--accent-bg);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .tree li > .row.current .num { color: var(--accent); }
+  .tree .chev {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-faint);
+    transition: transform 0.16s ease;
+    user-select: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 14px; height: 14px;
+  }
+  .tree .chev.open { transform: rotate(90deg); }
+  .tree .chev.leaf { color: transparent; cursor: default; }
+  .tree .name { display: flex; align-items: center; min-width: 0; }
+  .tree .label-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tree .num {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    color: var(--text-faint);
+  }
+  .tree ul ul {
+    margin-left: 0.55rem;
+    padding-left: 0.45rem;
+    border-left: 1px solid var(--border);
+  }
+  .tree ul ul.collapsed { display: none; }
+
+  .dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+  }
+  .dot-overview    { background: var(--type-overview); }
+  .dot-ui          { background: var(--type-ui); }
+  .dot-service     { background: var(--type-service); }
+  .dot-integration { background: var(--type-integration); }
+  .dot-cloud       { background: var(--type-cloud); }
+  .dot-infra       { background: var(--type-infra); }
+  .dot-ingress     { background: var(--type-ingress); }
+  .dot-egress      { background: var(--type-egress); }
+  .dot-domain      { background: var(--type-domain); }
+  .dot-secret      { background: var(--type-secret); }
+  .dot-auth        { background: var(--type-auth); }
+
+  /* ─────── main reading column ─────── */
+  main.read {
+    padding: 3rem 4rem 8rem;
+    max-width: calc(var(--measure) + 8rem);
+    min-width: 0;
+    animation: fadeUp 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-head { margin-bottom: 1.8rem; }
+  .section-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+  }
+  .section-meta .num { color: var(--text); }
+  .section-meta .pipe { color: var(--text-faint); }
+  .section-meta .type-pill {
+    display: inline-flex; align-items: center;
+    padding: 0.1rem 0.5rem 0.1rem 0.4rem;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.7rem;
+    color: var(--text-soft);
+  }
+
+  .section-title {
+    font-size: 2.4rem;
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 0.7rem;
+  }
+  .section-deck {
+    font-size: 1.02rem;
+    color: var(--text-muted);
+    max-width: var(--measure);
+    margin-bottom: 1.2rem;
+    line-height: 1.5;
+  }
+
+  .tags { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+  .tag {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--text-soft);
+    border: 1px solid var(--border);
+    background: var(--bg-pane);
+    padding: 0.18rem 0.5rem;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* properties block — card style */
+  .props {
+    margin: 2rem 0;
+    max-width: var(--measure);
+    background: var(--bg-pane);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .props-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.65rem 1rem;
+    background: var(--bg-soft);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+  .props-header .schema-link {
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 0.7rem;
+  }
+  .props-header .schema-link:hover { text-decoration: underline; }
+  .props dl {
+    display: grid;
+    grid-template-columns: 10rem 1fr;
+  }
+  .props dt {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    padding: 0.65rem 0.8rem 0.65rem 1rem;
+    border-bottom: 1px solid var(--border);
+    align-self: start;
+  }
+  .props dd {
+    font-size: 0.88rem;
+    padding: 0.65rem 1rem 0.65rem 0;
+    border-bottom: 1px solid var(--border);
+    align-self: start;
+    color: var(--text);
+  }
+  .props dl > *:nth-last-child(-n+2) { border-bottom: 0; }
+
+  /* prose */
+  .prose {
+    max-width: var(--measure);
+    font-size: 0.97rem;
+    line-height: 1.65;
+    color: var(--text);
+  }
+  .prose p { margin-bottom: 1rem; text-wrap: pretty; }
+  .prose h3 {
+    font-size: 1.15rem;
+    font-weight: 500;
+    margin: 1.8rem 0 0.6rem;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .prose h3 .h-num {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--text-faint);
+    margin-right: 0.6rem;
+    font-weight: 400;
+  }
+  .prose code {
+    font-family: var(--mono);
+    font-size: 0.84em;
+    background: var(--bg-soft);
+    padding: 0.08em 0.35em;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+  .prose blockquote {
+    border-left: 3px solid var(--border-strong);
+    padding: 0.1rem 0 0.1rem 1rem;
+    margin: 1.3rem 0;
+    color: var(--text-soft);
+  }
+
+  /* inline cross-references */
+  .ref {
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: none;
+    border-bottom: 1px solid var(--accent-edge);
+    padding-bottom: 1px;
+    transition: background 0.12s, border-color 0.12s;
+    text-underline-offset: 3px;
+  }
+  .ref:hover {
+    background: var(--accent-bg);
+    border-bottom-color: var(--accent);
+  }
+  .ref.active {
+    background: var(--accent-bg);
+    border-bottom-color: var(--accent);
+  }
+
+  /* edges card */
+  .edges {
+    margin: 1.5rem 0;
+    max-width: var(--measure);
+    background: var(--bg-pane);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .edges-header {
+    padding: 0.6rem 1rem;
+    background: var(--bg-soft);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    display: flex; justify-content: space-between;
+  }
+  .edges-header .count {
+    background: var(--bg-pane);
+    border: 1px solid var(--border);
+    padding: 0 0.4rem;
+    border-radius: 9px;
+    font-size: 0.65rem;
+  }
+  .edges-list {}
+  .gline {
+    display: grid;
+    grid-template-columns: 7rem 1.2rem 1fr 1fr;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.82rem;
+  }
+  .gline:last-child { border-bottom: 0; }
+  .gline .role {
+    font-family: var(--mono);
+    color: var(--text-muted);
+    font-size: 0.68rem;
+  }
+  .gline .arrow { color: var(--text-faint); text-align: center; }
+  .gline .target {
+    color: var(--accent);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+  }
+  .gline .target:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .gline .num {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-faint);
+    text-align: right;
+  }
+
+  /* refs at section foot */
+  .refs-grid {
+    margin-top: 2.5rem;
+    padding-top: 1.4rem;
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    max-width: var(--measure);
+  }
+  .refs-grid h4 {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 0.7rem;
+  }
+  .refs-grid ul { list-style: none; }
+  .refs-grid li {
+    font-size: 0.86rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: 5.5rem 1fr auto;
+    gap: 0.6rem;
+    align-items: center;
+    color: var(--text);
+    transition: color 0.12s;
+  }
+  .refs-grid li:hover { color: var(--accent); }
+  .refs-grid li:hover .role { color: var(--text-muted); }
+  .refs-grid li .role {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-faint);
+  }
+  .refs-grid li .num {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--text-faint);
+  }
+
+  /* foot meta */
+  .foot-meta {
+    margin-top: 2.5rem;
+    padding-top: 1.4rem;
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    max-width: var(--measure);
+  }
+  .foot-meta h4 {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 0.7rem;
+  }
+  .rev-row {
+    padding: 0.36rem 0;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 5.5rem 1fr;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    color: var(--text);
+  }
+  .rev-row .when {
+    font-family: var(--mono);
+    color: var(--text-faint);
+    font-size: 0.72rem;
+  }
+  .rev-row .actor {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    margin-left: 0.4rem;
+  }
+
+  /* ─────── glimpse panel ─────── */
+  aside.glimpse {
+    border-left: 1px solid var(--border);
+    background: var(--bg-pane);
+    padding: 1.1rem 1.3rem 6rem;
+    position: sticky; top: var(--masthead-h);
+    align-self: start;
+    max-height: calc(100vh - var(--masthead-h));
+    overflow-y: auto;
+    animation: slidein 0.32s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  @keyframes slidein {
+    from { transform: translateX(20px); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+  }
+  .glimpse-head {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.85rem;
+  }
+  .glimpse-head .label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    flex: 1;
+  }
+  .glimpse-head .label .id {
+    color: var(--text);
+    margin-left: 0.4rem;
+  }
+  .glimpse-head button {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+    color: var(--text-soft);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    width: 26px; height: 26px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+  }
+  .glimpse-head button:hover {
+    background: var(--bg-pane);
+    color: var(--text);
+    border-color: var(--border-strong);
+  }
+  .glimpse-head button[disabled] {
+    color: var(--text-faint);
+    cursor: not-allowed;
+    background: transparent;
+  }
+  .glimpse-stack {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    color: var(--text-muted);
+    margin-bottom: 0.9rem;
+    flex-wrap: wrap;
+  }
+  .glimpse-stack .chip {
+    padding: 0.18rem 0.45rem;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.1s, color 0.1s;
+    color: var(--text-soft);
+  }
+  .glimpse-stack .chip:hover { background: var(--bg-strong); }
+  .glimpse-stack .chip.current {
+    color: var(--accent);
+    border-color: var(--accent-edge);
+    background: var(--accent-bg);
+  }
+  .glimpse-stack .arrow { color: var(--text-faint); }
+
+  .glimpse-num {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-bottom: 0.45rem;
+  }
+  .glimpse-title {
+    font-size: 1.4rem;
+    line-height: 1.15;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.018em;
+  }
+  .glimpse .tags { margin-bottom: 0.85rem; }
+  .glimpse .tag { font-size: 0.62rem; padding: 0.14rem 0.45rem; }
+  .glimpse .props { margin: 0.6rem 0 1rem; border-radius: 6px; }
+  .glimpse .props-header { padding: 0.5rem 0.75rem; font-size: 0.62rem; }
+  .glimpse .props dl { grid-template-columns: 6.5rem 1fr; }
+  .glimpse .props dt { font-size: 0.66rem; padding: 0.4rem 0.6rem 0.4rem 0.75rem; }
+  .glimpse .props dd { font-size: 0.78rem; padding: 0.4rem 0.75rem 0.4rem 0; line-height: 1.5; }
+  .glimpse .prose { font-size: 0.85rem; line-height: 1.55; }
+  .glimpse-open {
+    margin-top: 1.1rem;
+    font-family: var(--sans);
+    font-size: 0.74rem;
+    color: var(--accent);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.32rem 0.6rem;
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-edge);
+    border-radius: 5px;
+    transition: background 0.12s;
+  }
+  .glimpse-open:hover { background: var(--accent-edge); }
+
+  /* ───────────── TOC VIEW ───────────── */
+  .toc-shell {
+    padding: 3.5rem 3rem 8rem;
+    max-width: 56rem;
+    margin: 0 auto;
+    animation: fadeUp 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .toc-eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 0.6rem;
+  }
+  .toc-title {
+    font-size: 3rem;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+  }
+  .toc-subtitle {
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+  }
+  .toc-meta {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+    padding-bottom: 1.2rem;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    color: var(--text-muted);
+  }
+  .toc-meta b { color: var(--text); font-weight: 500; margin-left: 0.4rem; }
+
+  .toc-list { list-style: none; }
+  .toc-row {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr auto;
+    align-items: center;
+    padding: 0.4rem 0.7rem;
+    margin: 0 -0.7rem;
+    gap: 0.7rem;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background 0.1s;
+  }
+  .toc-row:hover { background: var(--bg-soft); }
+  .toc-row .num {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    color: var(--text-faint);
+  }
+  .toc-row .name {
+    font-size: 0.92rem;
+    color: var(--text);
+    display: flex; align-items: center;
+  }
+  .toc-row .page {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-faint);
+  }
+  .toc-row.l1 {
+    margin-top: 1.2rem;
+    padding-top: 0.7rem;
+    border-top: 1px solid var(--border);
+  }
+  .toc-row.l1 .name {
+    font-size: 1.15rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .toc-row.l1 .num { color: var(--text); font-size: 0.8rem; }
+  .toc-row.l1 .page { color: var(--text); font-size: 0.78rem; }
+  .toc-row.l2 { padding-left: 1.7rem; }
+  .toc-row.l3 { padding-left: 3.4rem; }
+  .toc-row.l3 .name { color: var(--text-soft); }
+  .toc-row.l4 { padding-left: 5.1rem; }
+  .toc-row.l4 .name { color: var(--text-soft); font-size: 0.88rem; }
+  .toc-row.l5 { padding-left: 6.8rem; }
+  .toc-row.l5 .name { color: var(--text-muted); font-size: 0.85rem; }
+
+  /* ───────────── PRINT VIEW ───────────── */
+  .print-shell {
+    background: var(--bg-strong);
+    padding: 3rem 0 6rem;
+    min-height: calc(100vh - var(--masthead-h));
+  }
+  .print-bar {
+    max-width: 740px;
+    margin: 0 auto 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-pane);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  .print-bar .meta {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+  }
+  .print-bar .meta b { color: var(--text); margin-right: 0.2rem; font-weight: 500; }
+  .print-bar button {
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--bg);
+    background: var(--text);
+    border: 0;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background 0.15s;
+    display: inline-flex; align-items: center; gap: 0.45rem;
+  }
+  .print-bar button:hover { background: var(--text-soft); }
+  .print-bar button .kbd {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    color: var(--text-faint);
+    background: var(--bg-pane);
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+  }
+
+  .page {
+    background: var(--bg-pane);
+    width: 740px;
+    min-height: 980px;
+    margin: 0 auto 1.4rem;
+    padding: 3.2rem 4rem 3.5rem;
+    box-shadow: 0 1px 0 var(--border), 0 4px 18px -6px rgba(0,0,0,0.08);
+    position: relative;
+    border-radius: 2px;
+  }
+  .page-runner {
+    position: absolute;
+    top: 1.1rem;
+    left: 4rem;
+    right: 4rem;
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--text-faint);
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .page-no {
+    position: absolute;
+    bottom: 1.4rem;
+    left: 0; right: 0;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-faint);
+  }
+  .page-content { padding-top: 1.4rem; }
+  .page-content .section-meta { font-size: 0.66rem; }
+  .page-content h2 {
+    font-size: 1.85rem;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+  .page-content .section-deck { font-size: 0.92rem; margin-bottom: 1rem; }
+  .page-content .tags { margin-bottom: 1.1rem; }
+  .page-content .props { margin: 1.1rem 0; }
+  .page-content .prose { font-size: 0.9rem; line-height: 1.6; }
+
+  .footnotes {
+    margin-top: 2rem;
+    padding-top: 0.7rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .footnotes div { padding: 0.18rem 0; }
+  .footnotes .mark {
+    font-family: var(--mono);
+    color: var(--accent);
+    margin-right: 0.5rem;
+    font-size: 0.72rem;
+  }
+  .footnote-mark {
+    font-family: var(--mono);
+    font-size: 0.7em;
+    color: var(--accent);
+    vertical-align: 0.45em;
+    margin: 0 0.05em;
+  }
+
+  /* cover page */
+  .page.cover {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 980px;
+  }
+  .cover-top, .cover-mid, .cover-bot { padding: 2rem 4rem; }
+  .cover-top {
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    color: var(--text-muted);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .cover-top .mark-sm {
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--text);
+    position: relative;
+  }
+  .cover-top .mark-sm::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 1px solid var(--text);
+    border-bottom: 0; border-right: 0;
+  }
+  .cover-mid {
+    flex: 1;
+    display: flex; flex-direction: column; justify-content: center;
+    padding-top: 4rem; padding-bottom: 4rem;
+  }
+  .cover-mid .kicker {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+  .cover-mid .crest {
+    font-size: 3.4rem;
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 1rem;
+  }
+  .cover-mid .lede {
+    font-size: 1.05rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+    max-width: 28rem;
+  }
+  .cover-bot {
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+  }
+  .cover-bot .cell dt {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--text-faint);
+    margin-bottom: 0.3rem;
+  }
+  .cover-bot .cell dd {
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+
+  /* scrollbars */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; border: 3px solid var(--bg); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+  /* responsive */
+  @media (max-width: 1100px) {
+    .masthead { grid-template-columns: 1fr auto; padding: 0 1rem; }
+    .masthead .crumb { display: none; }
+    .read-shell { grid-template-columns: 1fr; }
+    .read-shell.panel { grid-template-columns: 1fr; }
+    aside.tree { display: none; }
+    aside.glimpse {
+      position: fixed; top: var(--masthead-h); right: 0; bottom: 0;
+      width: min(420px, 90vw);
+      z-index: 30;
+      box-shadow: -10px 0 30px -10px rgba(0,0,0,0.15);
+    }
+    main.read { padding: 2rem 1.2rem 6rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="brand">
+    <span class="mark"></span>
+    <span>Architecture Notebook</span>
+    <span class="rev">rev.14</span>
+  </div>
+  <div class="crumb" id="crumb">
+    <span class="pin">⌖</span>
+    <span>Cloud Accounts</span><span class="sep">/</span>
+    <span>Production AWS</span><span class="sep">/</span>
+    <span>Infrastructure</span><span class="sep">/</span>
+    <span>Ingresses</span><span class="sep">/</span>
+    <b>api.acme.com</b>
+  </div>
+  <div class="view-toggle">
+    <button class="active" data-view="read">Read</button>
+    <button data-view="toc">Contents</button>
+    <button data-view="print">Print</button>
+  </div>
+</header>
+
+<!-- ─────────────────── READ VIEW ─────────────────── -->
+<div class="view active" id="view-read">
+  <div class="read-shell" id="read-shell">
+
+    <aside class="tree">
+      <div class="tree-filter">
+        <input type="text" placeholder="Filter sections" />
+        <span class="shortcut">⌘K</span>
+      </div>
+      <div class="tree-eyebrow"><span>Acme Trading System</span><b>114</b></div>
+      <div id="tree"></div>
+    </aside>
+
+    <main class="read">
+      <header class="section-head">
+        <div class="section-meta">
+          <span class="num">5.1.1.1.1</span>
+          <span class="type-pill"><span class="dot dot-ingress"></span>HTTPS Ingress</span>
+          <span class="pipe">·</span>
+          <span>amended 17 May 2026</span>
+        </div>
+        <h1 class="section-title">api.acme.com</h1>
+        <p class="section-deck">The public HTTPS entrypoint for the Acme trading API. TLS termination, JWT enforcement, and the route to the Order Engine behind it.</p>
+        <div class="tags">
+          <span class="tag">prod</span>
+          <span class="tag">us-east-1</span>
+          <span class="tag">public</span>
+          <span class="tag">tier-0</span>
+        </div>
+      </header>
+
+      <section class="props">
+        <div class="props-header">
+          <span>Properties · Ingress / v3</span>
+          <a class="schema-link">view schema →</a>
+        </div>
+        <dl>
+          <dt>protocol</dt>
+          <dd>HTTPS, TLS 1.3 only (no fallback)</dd>
+          <dt>domain</dt>
+          <dd><span class="ref" data-target="domain-acme">acme.com</span> via Route53 alias <code>A</code> record</dd>
+          <dt>tls cert</dt>
+          <dd><span class="ref" data-target="cert-acme">AWS ACM · *.acme.com</span> (auto-rotated)</dd>
+          <dt>upstream</dt>
+          <dd><span class="ref" data-target="svc-order">Order Engine</span> via ALB → ECS Fargate, 2 tasks min</dd>
+          <dt>auth</dt>
+          <dd>JWT bearer required — <span class="ref" data-target="auth-jwt">Auth0 RS256</span>; verified by Lambda authorizer</dd>
+          <dt>rate limit</dt>
+          <dd>240 req/min/key, burst 600 (WAF rate-based rule)</dd>
+          <dt>waf rules</dt>
+          <dd>AWS Managed · Core + KnownBadInputs + custom <code>api-injection-v2</code></dd>
+          <dt>logs</dt>
+          <dd>ALB access log → <span class="ref" data-target="log-access">CloudTrail · prod</span>; sampled 100%</dd>
+        </dl>
+      </section>
+
+      <div class="prose">
+        <p>Public HTTPS entry point for the Acme trading API, terminating TLS at an application load balancer in <span class="ref" data-target="acct-prod">Production AWS</span> and forwarding traffic to the <span class="ref" data-target="svc-order">Order Engine</span> service. All inbound requests must carry a JWT issued by <span class="ref" data-target="auth-jwt">our Auth0 tenant</span>; unauthenticated requests are short-circuited at the listener rule before reaching application code.</p>
+
+        <p>The certificate is rotated automatically by ACM with DNS-01 validation against the parent zone. Domain delegation comes from <span class="ref" data-target="domain-acme">acme.com</span>, which also fronts the customer portal and admin dashboard — see those entries for the corresponding ingress definitions. Rate limits are enforced at the WAF, keyed on the bearer subject claim; offenders receive 429 and surface in the <span class="ref" data-target="log-access">cloud account access log</span>.</p>
+
+        <h3><span class="h-num">5.1.1.1.1.1</span>Egress from this ingress</h3>
+        <p>Behind the ALB, traffic enters a private subnet and reaches the Order Engine task on port 8080 over the cluster service mesh. Outbound calls from that service — to Plaid, Stripe, and the internal ledger — are documented under <span class="ref" data-target="svc-order">Order Engine</span> and its associated <span class="ref" data-target="integration-plaid">Plaid webhook</span> entry.</p>
+
+        <blockquote>If you are reviewing this ingress for a security audit, the JWT verification flow and the Plaid HMAC verification are the two control points most often cited. Follow the references on this page to walk both.</blockquote>
+      </div>
+
+      <div class="edges">
+        <div class="edges-header">
+          <span>Edges</span>
+          <span class="count">6</span>
+        </div>
+        <div class="edges-list">
+          <div class="gline"><span class="role">uses</span><span class="arrow">→</span><span class="target" data-target="domain-acme">domain-acme-com</span><span class="num">5.1.1.5.1</span></div>
+          <div class="gline"><span class="role">uses</span><span class="arrow">→</span><span class="target" data-target="cert-acme">cert-acme-wildcard</span><span class="num">5.1.1.7.2</span></div>
+          <div class="gline"><span class="role">routes-to</span><span class="arrow">→</span><span class="target" data-target="svc-order">service-order-engine</span><span class="num">3.1</span></div>
+          <div class="gline"><span class="role">enforces</span><span class="arrow">→</span><span class="target" data-target="auth-jwt">auth-jwt-policy</span><span class="num">7.2</span></div>
+          <div class="gline"><span class="role">logs-to</span><span class="arrow">→</span><span class="target" data-target="log-access">log-cloudtrail-prod</span><span class="num">5.1.1.4</span></div>
+          <div class="gline"><span class="role">contained-by</span><span class="arrow">↑</span><span class="target" data-target="infra-prod">infra-aws-prod</span><span class="num">5.1.1</span></div>
+        </div>
+      </div>
+
+      <div class="refs-grid">
+        <div>
+          <h4>References to</h4>
+          <ul>
+            <li><span class="role">uses</span><span data-target="domain-acme">acme.com</span><span class="num">5.1.1.5.1</span></li>
+            <li><span class="role">uses</span><span data-target="cert-acme">ACM wildcard</span><span class="num">5.1.1.7.2</span></li>
+            <li><span class="role">routes</span><span data-target="svc-order">Order Engine</span><span class="num">3.1</span></li>
+            <li><span class="role">enforces</span><span data-target="auth-jwt">Auth0 JWT</span><span class="num">7.2</span></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Referenced by</h4>
+          <ul>
+            <li><span class="role">tested-by</span><span>Customer onboarding runbook</span><span class="num">8.4</span></li>
+            <li><span class="role">monitored</span><span>API uptime alarm</span><span class="num">9.1.3</span></li>
+            <li><span class="role">documented</span><span>Public API reference</span><span class="num">App. A</span></li>
+            <li><span class="role">depends</span><span>Trading desk client SDK</span><span class="num">2.3</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="foot-meta">
+        <div>
+          <h4>Revisions</h4>
+          <div class="rev-row"><span class="when">17 May 26</span><span>Added WAF rule <code>api-injection-v2</code><span class="actor">claude</span></span></div>
+          <div class="rev-row"><span class="when">04 May 26</span><span>Rate limit 600 → 240<span class="actor">alex</span></span></div>
+          <div class="rev-row"><span class="when">28 Apr 26</span><span>Migrated to Ingress v3 schema<span class="actor">claude</span></span></div>
+        </div>
+        <div>
+          <h4>Comments</h4>
+          <div class="rev-row"><span class="when">open</span><span>2 unresolved threads</span></div>
+          <div class="rev-row"><span class="when">last</span><span>"Should rate-limit key be sub or kid?"</span></div>
+        </div>
+      </div>
+    </main>
+
+    <aside class="glimpse" id="glimpse" hidden>
+      <div class="glimpse-head">
+        <span class="label">Glimpse<span class="id" id="g-id"></span></span>
+        <button id="g-back" title="back" disabled>←</button>
+        <button id="g-fwd"  title="forward" disabled>→</button>
+        <button id="g-close" title="close">✕</button>
+      </div>
+      <div class="glimpse-stack" id="g-stack"></div>
+      <div id="g-body"></div>
+    </aside>
+  </div>
+</div>
+
+<!-- ─────────────────── TOC VIEW ─────────────────── -->
+<div class="view" id="view-toc">
+  <div class="toc-shell">
+    <div class="toc-eyebrow">Architecture Notebook</div>
+    <h1 class="toc-title">Acme Trading System</h1>
+    <p class="toc-subtitle">A complete reference of the trading platform — interfaces, services, and the infrastructure that runs them.</p>
+    <div class="toc-meta">
+      <span>Revision<b>14</b></span>
+      <span>Issued<b>17 May 2026</b></span>
+      <span>Sections<b>114</b></span>
+      <span>Prepared for<b>Acme Capital</b></span>
+    </div>
+    <ul class="toc-list" id="toc-list"></ul>
+  </div>
+</div>
+
+<!-- ─────────────────── PRINT VIEW ─────────────────── -->
+<div class="view" id="view-print">
+  <div class="print-shell">
+    <div class="print-bar">
+      <span class="meta">Print preview<b>·</b>12 of 64 pages shown</span>
+      <button onclick="window.print()">Save as PDF <span class="kbd">⌘P</span></button>
+    </div>
+
+    <!-- Cover -->
+    <div class="page cover">
+      <div class="cover-top">
+        <div style="display:flex;align-items:center;gap:0.6rem;">
+          <span class="mark-sm"></span>
+          <span>Architecture Notebook</span>
+        </div>
+        <span>Confidential</span>
+      </div>
+      <div class="cover-mid">
+        <div class="kicker">System Reference · Volume I</div>
+        <h1 class="crest">Acme Trading System</h1>
+        <p class="lede">A complete reference of user interfaces, backend services, integrations, cloud accounts, and the controls that bind them — prepared for Acme Capital review.</p>
+      </div>
+      <div class="cover-bot">
+        <div class="cell"><dt>Revision</dt><dd>14 · 17 May 2026</dd></div>
+        <div class="cell"><dt>Prepared by</dt><dd>Platform Engineering</dd></div>
+        <div class="cell"><dt>Prepared for</dt><dd>Acme Capital, LLC</dd></div>
+      </div>
+    </div>
+
+    <!-- a sample section page -->
+    <div class="page">
+      <div class="page-runner">
+        <span>5 · Cloud Accounts</span>
+        <span>Acme Trading System · rev.14</span>
+      </div>
+      <div class="page-content">
+        <div class="section-meta">
+          <span class="num">5.1.1.1.1</span>
+          <span class="type-pill"><span class="dot dot-ingress"></span>HTTPS Ingress</span>
+        </div>
+        <h2>api.acme.com</h2>
+        <p class="section-deck">The public HTTPS entrypoint for the Acme trading API.</p>
+        <div class="tags">
+          <span class="tag">prod</span>
+          <span class="tag">us-east-1</span>
+          <span class="tag">tier-0</span>
+        </div>
+
+        <div class="props">
+          <div class="props-header"><span>Properties · Ingress / v3</span></div>
+          <dl>
+            <dt>protocol</dt><dd>HTTPS, TLS 1.3 only</dd>
+            <dt>domain</dt><dd>acme.com<sup class="footnote-mark">1</sup> · Route53 alias</dd>
+            <dt>upstream</dt><dd>Order Engine<sup class="footnote-mark">2</sup> · ECS Fargate</dd>
+            <dt>auth</dt><dd>JWT bearer · Auth0 RS256<sup class="footnote-mark">3</sup></dd>
+            <dt>rate limit</dt><dd>240 req/min/key, burst 600</dd>
+          </dl>
+        </div>
+
+        <div class="prose">
+          <p>Public HTTPS entry point for the Acme trading API, terminating TLS at an application load balancer in Production AWS (5.1) and forwarding to the Order Engine service. All requests must carry a JWT issued by the Acme Auth0 tenant; unauthenticated requests are short-circuited at the ALB listener rule before reaching application code.</p>
+          <p>The certificate is rotated automatically by ACM with DNS-01 validation against the parent zone. Domain delegation comes from acme.com, which also fronts the customer portal and admin dashboard.</p>
+          <h3><span class="h-num">5.1.1.1.1.1</span>Egress from this ingress</h3>
+          <p>Behind the ALB, traffic enters a private subnet and reaches the Order Engine task on port 8080 over the cluster service mesh. Outbound calls from that service are documented under its own entry.</p>
+        </div>
+
+        <div class="footnotes">
+          <div><span class="mark">1</span>See 5.1.1.5.1 · acme.com, p. 47.</div>
+          <div><span class="mark">2</span>See 3.1 · Order Engine, p. 18.</div>
+          <div><span class="mark">3</span>See 7.2 · Auth0 RS256, p. 61.</div>
+        </div>
+      </div>
+      <div class="page-no">42</div>
+    </div>
+
+    <!-- second sample page -->
+    <div class="page">
+      <div class="page-runner">
+        <span>5 · Cloud Accounts</span>
+        <span>Acme Trading System · rev.14</span>
+      </div>
+      <div class="page-content">
+        <div class="section-meta">
+          <span class="num">5.1.1.5.1</span>
+          <span class="type-pill"><span class="dot dot-domain"></span>Domain</span>
+        </div>
+        <h2>acme.com</h2>
+        <p class="section-deck">Apex domain for the Acme trading platform.</p>
+        <div class="tags">
+          <span class="tag">apex</span>
+          <span class="tag">route53</span>
+        </div>
+        <div class="props">
+          <div class="props-header"><span>Properties · Domain / v1</span></div>
+          <dl>
+            <dt>registrar</dt><dd>AWS Route53</dd>
+            <dt>zone id</dt><dd>Z3ABCD1234EFGH</dd>
+            <dt>records</dt><dd>14 (A, AAAA, MX, TXT)</dd>
+          </dl>
+        </div>
+        <div class="prose">
+          <p>Delegated to Route53 in the production account. Hosts records for the API ingress<sup class="footnote-mark">1</sup>, the customer portal, the admin dashboard, and email DKIM/SPF.</p>
+        </div>
+        <div class="footnotes">
+          <div><span class="mark">1</span>See 5.1.1.1.1 · api.acme.com, p. 42.</div>
+        </div>
+      </div>
+      <div class="page-no">47</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ─── tree data ───
+  const tree = [
+    { id: 'sys', num: '1', title: 'System Overview', type: 'overview' },
+    { id: 'ui', num: '2', title: 'User Interfaces', type: 'ui', kids: [
+      { id: 'ui-portal', num: '2.1', title: 'Customer Web Portal', type: 'ui' },
+      { id: 'ui-admin',  num: '2.2', title: 'Admin Dashboard',     type: 'ui' },
+      { id: 'ui-sdk',    num: '2.3', title: 'Trading Desk SDK',    type: 'ui' },
+    ]},
+    { id: 'svc', num: '3', title: 'Backend Services', type: 'service', kids: [
+      { id: 'svc-order',  num: '3.1', title: 'Order Engine',       type: 'service' },
+      { id: 'svc-settle', num: '3.2', title: 'Settlement Service', type: 'service' },
+      { id: 'svc-ledger', num: '3.3', title: 'Ledger',             type: 'service' },
+    ]},
+    { id: 'int', num: '4', title: 'Integrations', type: 'integration', kids: [
+      { id: 'integration-plaid', num: '4.1', title: 'Plaid Webhook',        type: 'integration' },
+      { id: 'int-stripe',        num: '4.2', title: 'Stripe Subscriptions', type: 'integration' },
+    ]},
+    { id: 'cloud', num: '5', title: 'Cloud Accounts', type: 'cloud', kids: [
+      { id: 'acct-prod', num: '5.1', title: 'Production AWS', type: 'cloud', kids: [
+        { id: 'infra-prod', num: '5.1.1', title: 'Infrastructure', type: 'infra', kids: [
+          { id: 'ing-prod', num: '5.1.1.1', title: 'Ingresses', type: 'infra', kids: [
+            { id: 'ing-api', num: '5.1.1.1.1', title: 'api.acme.com', type: 'ingress', current: true },
+            { id: 'ing-app', num: '5.1.1.1.2', title: 'app.acme.com', type: 'ingress' },
+          ]},
+          { id: 'egr-prod', num: '5.1.1.2', title: 'Egresses',  type: 'egress' },
+          { id: 'net-prod', num: '5.1.1.3', title: 'Networking', type: 'infra' },
+          { id: 'log-access', num: '5.1.1.4', title: 'Access Logs', type: 'infra' },
+          { id: 'dom-prod', num: '5.1.1.5', title: 'Domain Names', type: 'infra', kids: [
+            { id: 'domain-acme', num: '5.1.1.5.1', title: 'acme.com', type: 'domain' },
+          ]},
+          { id: 'db-prod',  num: '5.1.1.6', title: 'Databases', type: 'infra' },
+          { id: 'sec-prod', num: '5.1.1.7', title: 'Secrets',   type: 'infra', kids: [
+            { id: 'sec-stripe', num: '5.1.1.7.1', title: 'stripe-webhook-secret', type: 'secret' },
+            { id: 'cert-acme',  num: '5.1.1.7.2', title: 'cert-acme-wildcard',    type: 'secret' },
+          ]},
+        ]},
+      ]},
+      { id: 'acct-staging', num: '5.2', title: 'Staging AWS', type: 'cloud' },
+    ]},
+    { id: 'authz', num: '6', title: 'Authorization', type: 'auth' },
+    { id: 'authn', num: '7', title: 'Authentication', type: 'auth', kids: [
+      { id: 'auth-pwd', num: '7.1', title: 'Password Policy', type: 'auth' },
+      { id: 'auth-jwt', num: '7.2', title: 'Auth0 RS256',     type: 'auth' },
+    ]},
+  ];
+
+  // ─── glimpse data ───
+  const G = {
+    'domain-acme': {
+      num: '5.1.1.5.1', type: 'Domain', typeKey: 'domain', title: 'acme.com',
+      tags: ['apex', 'route53', 'public'],
+      props: [
+        ['registrar', 'AWS Route53'],
+        ['zone id',   'Z3ABCD1234EFGH'],
+        ['nameservers', 'ns-{1,2,3,4}.awsdns'],
+        ['records',   '14 records (A, AAAA, MX, TXT)'],
+      ],
+      body: '<p>Apex domain for the Acme trading platform. Delegated to AWS Route53 in the production account. Hosts records for the API ingress, customer portal, admin dashboard, and email DKIM/SPF.</p><p>Used by <span class="ref" data-target="ing-api">api.acme.com</span> and several sibling ingresses.</p>'
+    },
+    'cert-acme': {
+      num: '5.1.1.7.2', type: 'Secret · TLS', typeKey: 'secret', title: 'cert-acme-wildcard',
+      tags: ['acm', 'auto-renew', 'wildcard'],
+      props: [
+        ['kind',       'TLS X.509 certificate'],
+        ['subject',    '*.acme.com'],
+        ['issuer',     'Amazon (ACM)'],
+        ['rotated',    'every 13 months · automatic'],
+        ['stored in',  '<span class="ref" data-target="sec-prod">AWS ACM (us-east-1)</span>'],
+      ],
+      body: '<p>Wildcard certificate covering all subdomains of <span class="ref" data-target="domain-acme">acme.com</span>. Provisioned and rotated by ACM with DNS-01 validation against the parent zone.</p>'
+    },
+    'svc-order': {
+      num: '3.1', type: 'Backend Service', typeKey: 'service', title: 'Order Engine',
+      tags: ['ts', 'ecs', 'fargate'],
+      props: [
+        ['runtime',   'Node.js 24 · TypeScript'],
+        ['platform',  'AWS ECS Fargate, 2 tasks min'],
+        ['ingress',   '<span class="ref" data-target="ing-api">api.acme.com</span>'],
+        ['datastore', 'Aurora Postgres (orders-prod)'],
+      ],
+      body: '<p>Core order matching and lifecycle service. Receives signed orders from the API ingress, validates against account state, and writes to the orders ledger before publishing fills to the settlement service.</p>'
+    },
+    'auth-jwt': {
+      num: '7.2', type: 'Authentication Policy', typeKey: 'auth', title: 'Auth0 RS256',
+      tags: ['jwt', 'rs256', 'auth0'],
+      props: [
+        ['issuer',    'https://acme.us.auth0.com/'],
+        ['algorithm', 'RS256'],
+        ['jwks',      '/.well-known/jwks.json (cached 1h)'],
+        ['audiences', 'api.acme.com, internal.acme.com'],
+      ],
+      body: '<p>JWT bearer policy used by all public ingresses. Tokens are issued by the Acme Auth0 tenant, signed with RS256, and verified at the ALB via Lambda authorizer that caches the JWKS.</p>'
+    },
+    'acct-prod': {
+      num: '5.1', type: 'Cloud Account', typeKey: 'cloud', title: 'Production AWS',
+      tags: ['aws', 'us-east-1'],
+      props: [
+        ['account id', '123456789012'],
+        ['region',     'us-east-1 (primary)'],
+        ['owner',      'platform-eng@acme'],
+      ],
+      body: '<p>Primary production AWS account housing customer-facing infrastructure, databases, and the secrets needed to operate them.</p>'
+    },
+    'integration-plaid': {
+      num: '4.1', type: 'Integration', typeKey: 'integration', title: 'Plaid Webhook',
+      tags: ['webhook', 'inbound'],
+      props: [
+        ['vendor',   'Plaid'],
+        ['endpoint', 'POST /webhooks/plaid'],
+        ['secret',   '<span class="ref" data-target="sec-stripe">plaid-webhook-secret</span>'],
+      ],
+      body: '<p>Inbound webhook from Plaid carrying account-link and transaction events. Payload signed with HMAC-SHA256; signature is verified against the shared secret before any side effect runs.</p>'
+    },
+    'log-access': {
+      num: '5.1.1.4', type: 'Access Log', typeKey: 'infra', title: 'CloudTrail · prod',
+      tags: ['cloudtrail', 'siem'],
+      props: [
+        ['trail',       'org-trail-prod'],
+        ['destination', 's3://acme-cloudtrail-prod'],
+        ['retention',   '7 years'],
+      ],
+      body: '<p>Organization-wide CloudTrail covering all API activity in production AWS. Forwarded to the SIEM for real-time alerting.</p>'
+    },
+    'infra-prod': {
+      num: '5.1.1', type: 'Infrastructure', typeKey: 'infra', title: 'Infrastructure',
+      tags: ['aws', 'prod'],
+      props: [],
+      body: '<p>Container for all infrastructure inside <span class="ref" data-target="acct-prod">Production AWS</span> — ingresses, networking, databases, and secrets.</p>'
+    },
+    'sec-prod': {
+      num: '5.1.1.7', type: 'Secret Store', typeKey: 'secret', title: 'Production Secrets',
+      tags: ['acm', 'secrets-manager'],
+      props: [
+        ['stores', 'AWS Secrets Manager, AWS ACM'],
+        ['access', 'IAM-scoped per service'],
+      ],
+      body: '<p>The collection of secret material used by production services, including <span class="ref" data-target="cert-acme">cert-acme-wildcard</span> and the Plaid webhook secret.</p>'
+    },
+    'sec-stripe': {
+      num: '5.1.1.7.1', type: 'Secret · HMAC', typeKey: 'secret', title: 'plaid-webhook-secret',
+      tags: ['hmac', 'plaid'],
+      props: [
+        ['kind',      'HMAC shared secret'],
+        ['used by',   '<span class="ref" data-target="integration-plaid">Plaid Webhook</span>'],
+        ['rotated',   'manually, 90 days'],
+        ['stored in', '<span class="ref" data-target="sec-prod">AWS Secrets Manager</span>'],
+      ],
+      body: '<p>Shared HMAC secret used to verify the authenticity of inbound Plaid webhooks. Note the cycle: this secret references its store, which references this secret back.</p>'
+    },
+    'ing-api': {
+      num: '5.1.1.1.1', type: 'HTTPS Ingress', typeKey: 'ingress', title: 'api.acme.com',
+      tags: ['prod', 'tier-0'],
+      props: [
+        ['domain',   '<span class="ref" data-target="domain-acme">acme.com</span>'],
+        ['upstream', '<span class="ref" data-target="svc-order">Order Engine</span>'],
+      ],
+      body: '<p>You are already here — opening this glimpse from inside its own page demonstrates cycle handling.</p>'
+    },
+  };
+
+  // ─── helpers ───
+  const TYPES = ['overview','ui','service','integration','cloud','infra','ingress','egress','domain','secret','auth'];
+  const dot = (t) => `<span class="dot dot-${TYPES.includes(t) ? t : 'infra'}"></span>`;
+
+  // ─── render tree ───
+  function renderTree(nodes, host) {
+    const ul = document.createElement('ul');
+    for (const n of nodes) {
+      const li = document.createElement('li');
+      const hasKids = n.kids && n.kids.length;
+      const row = document.createElement('div');
+      row.className = 'row' + (n.current ? ' current' : '');
+      row.dataset.id = n.id;
+      row.innerHTML = `
+        <span class="chev ${hasKids ? 'open' : 'leaf'}">${hasKids ? '›' : ''}</span>
+        <span class="name">${dot(n.type)}<span class="label-text">${n.title}</span></span>
+        <span class="num">${n.num}</span>`;
+      li.appendChild(row);
+      if (hasKids) renderTree(n.kids, li);
+      ul.appendChild(li);
+    }
+    host.appendChild(ul);
+  }
+  renderTree(tree, document.getElementById('tree'));
+  document.querySelectorAll('.tree .chev').forEach(c => {
+    if (c.classList.contains('leaf')) return;
+    c.addEventListener('click', e => {
+      e.stopPropagation();
+      const sub = c.closest('li').querySelector(':scope > ul');
+      if (sub) {
+        sub.classList.toggle('collapsed');
+        c.classList.toggle('open');
+      }
+    });
+  });
+
+  // ─── render TOC ───
+  function flatten(nodes, depth=1, out=[]) {
+    for (const n of nodes) {
+      out.push({ ...n, depth });
+      if (n.kids) flatten(n.kids, depth + 1, out);
+    }
+    return out;
+  }
+  const flat = flatten(tree);
+  const tocHost = document.getElementById('toc-list');
+  let pageNum = 1;
+  flat.forEach(n => {
+    pageNum += 1 + Math.floor(Math.random() * 2);
+    const li = document.createElement('li');
+    li.className = `toc-row l${n.depth}`;
+    li.innerHTML = `
+      <span class="num">${n.num}</span>
+      <span class="name">${dot(n.type)}${n.title}</span>
+      <span class="page">${pageNum}</span>`;
+    tocHost.appendChild(li);
+  });
+
+  // ─── glimpse navigation stack ───
+  const panel  = document.getElementById('glimpse');
+  const body   = document.getElementById('g-body');
+  const stackE = document.getElementById('g-stack');
+  const idE    = document.getElementById('g-id');
+  const bBack  = document.getElementById('g-back');
+  const bFwd   = document.getElementById('g-fwd');
+  const shell  = document.getElementById('read-shell');
+  let history = []; let cursor = -1;
+
+  function push(id) {
+    history = history.slice(0, cursor + 1);
+    history.push(id);
+    cursor = history.length - 1;
+    paint();
+  }
+  function back()  { if (cursor > 0) { cursor--; paint(); } }
+  function fwd()   { if (cursor < history.length - 1) { cursor++; paint(); } }
+  function close() { history = []; cursor = -1; paint(); }
+
+  function paint() {
+    if (cursor < 0) {
+      panel.hidden = true;
+      shell.classList.remove('panel');
+      document.querySelectorAll('.ref.active').forEach(r => r.classList.remove('active'));
+      return;
+    }
+    const id = history[cursor];
+    const d = G[id];
+    if (!d) { history.pop(); cursor--; paint(); return; }
+    panel.hidden = false;
+    shell.classList.add('panel');
+
+    bBack.disabled = cursor <= 0;
+    bFwd.disabled  = cursor >= history.length - 1;
+    idE.textContent = ' · ' + d.num;
+
+    stackE.innerHTML = history.map((hid, i) => {
+      const dd = G[hid];
+      return `<span class="chip ${i === cursor ? 'current' : ''}" data-i="${i}">${dd?.num || '?'} · ${dd?.title || '—'}</span>`;
+    }).join('<span class="arrow">→</span>');
+    stackE.querySelectorAll('.chip').forEach(c => {
+      c.addEventListener('click', () => { cursor = parseInt(c.dataset.i, 10); paint(); });
+    });
+
+    body.innerHTML = `
+      <div class="glimpse-num">${d.num} · ${d.type}</div>
+      <h2 class="glimpse-title">${d.title}</h2>
+      <div class="tags">
+        ${d.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+      </div>
+      ${d.props.length ? `
+        <div class="props">
+          <div class="props-header"><span>Properties</span></div>
+          <dl>${d.props.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
+        </div>` : ''}
+      <div class="prose">${d.body}</div>
+      <span class="glimpse-open">Open in full →</span>`;
+
+    body.querySelectorAll('.ref').forEach(r => {
+      r.addEventListener('click', e => {
+        e.preventDefault();
+        push(r.dataset.target);
+      });
+    });
+
+    document.querySelectorAll('.ref.active').forEach(r => r.classList.remove('active'));
+    document.querySelectorAll(`.ref[data-target="${id}"]`).forEach(r => r.classList.add('active'));
+  }
+  bBack.addEventListener('click', back);
+  bFwd.addEventListener('click', fwd);
+  document.getElementById('g-close').addEventListener('click', close);
+
+  // wire main-page refs and edge targets
+  document.querySelectorAll('.ref, .target').forEach(el => {
+    el.addEventListener('click', e => {
+      const t = el.dataset.target;
+      if (t && G[t]) { e.preventDefault(); push(t); }
+    });
+  });
+  document.querySelectorAll('.refs-grid li').forEach(li => {
+    li.addEventListener('click', e => {
+      const inner = li.querySelector('[data-target]');
+      const t = inner?.dataset.target;
+      if (t && G[t]) { e.preventDefault(); push(t); }
+    });
+  });
+
+  // ─── view switching ───
+  document.querySelectorAll('.view-toggle button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.view-toggle button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById(`view-${b.dataset.view}`).classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    });
+  });
+
+  // keyboard shortcut for filter
+  window.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      document.querySelector('.tree-filter input')?.focus();
+    }
+  });
+</script>
+</body>
+</html>

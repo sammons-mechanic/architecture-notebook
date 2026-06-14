@@ -1,0 +1,28 @@
+import './components/arch-ref.ts';
+import './components/arch-app.ts';
+import './components/arch-masthead.ts';
+import './components/arch-tree.ts';
+import './components/arch-tree-node.ts';
+import './components/arch-tree-filter.ts';
+import './components/arch-section-view.ts';
+import './components/arch-properties.ts';
+import './components/arch-edges.ts';
+import './components/arch-refs-grid.ts';
+import './components/arch-glimpse.ts';
+import './components/arch-toc.ts';
+import './components/arch-print.ts';
+import './components/arch-print-bar.ts';
+import './components/arch-not-found.ts';
+import './components/arch-error.ts';
+import './components/arch-foot-meta.ts';
+import './components/arch-prev-next.ts';
+import './components/arch-landing.ts';
+import './components/arch-new-project.ts';
+import './components/arch-foot-meta-revisions.ts';
+import './components/arch-revisions.ts';
+import './components/arch-foot-meta-comments.ts';
+import './components/arch-comments.ts';
+import './components/arch-command-palette.ts';
+import { init_router } from './router.ts';
+
+init_router();

@@ -1,0 +1,18 @@
+# Everything not needed inside the image.
+node_modules
+data
+web/dist
+.git
+.gitignore
+.github
+.vscode
+.idea
+.DS_Store
+*.log
+coverage
+.claude
+one-shot-prompt-plan.md
+
+# Tests aren't needed in the runtime image. The web-builder stage doesn't
+# touch them either.
+test

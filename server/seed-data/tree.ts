@@ -1,0 +1,96 @@
+export type SectionSeed = {
+  readonly slug: string;
+  readonly title: string;
+  readonly type: string;
+  readonly parent: string | null;
+  readonly deck?: string;
+  readonly tags?: ReadonlyArray<string>;
+  readonly properties?: Readonly<Record<string, unknown>>;
+  readonly html?: string;
+};
+
+export const SECTION_SEEDS: ReadonlyArray<SectionSeed> = [
+  { slug: 'sys', title: 'System Overview', type: 'overview', parent: null,
+    deck: 'Top-level view of the Acme Trading System.',
+    html: '<p>The Acme Trading System is a multi-tenant trading platform composed of web/admin/SDK frontends, three backend services, third-party integrations, two cloud accounts, and a centralized auth tier.</p>' },
+
+  { slug: 'ui', title: 'User Interfaces', type: 'ui', parent: null,
+    html: '<p>Surfaces facing customers, operators, and trading-desk integrators.</p>' },
+  { slug: 'ui-portal', title: 'Customer Web Portal', type: 'ui', parent: 'ui',
+    properties: { audience: 'retail customers', stack: 'React, Vite' } },
+  { slug: 'ui-admin', title: 'Admin Dashboard', type: 'ui', parent: 'ui',
+    properties: { audience: 'platform-eng', stack: 'React, Vite' } },
+  { slug: 'ui-sdk', title: 'Trading Desk SDK', type: 'ui', parent: 'ui',
+    properties: { audience: 'institutional desks', stack: 'TypeScript, Node' } },
+
+  { slug: 'svc', title: 'Backend Services', type: 'service', parent: null,
+    html: '<p>Core services running on AWS ECS Fargate.</p>' },
+  { slug: 'svc-order', title: 'Order Engine', type: 'service', parent: 'svc',
+    deck: 'Order matching and lifecycle service.',
+    tags: ['ts', 'ecs', 'fargate'],
+    properties: { language: 'Node.js 24 · TypeScript', platform: 'AWS ECS Fargate, 2 tasks min' },
+    html: '<p>Receives signed orders from the API ingress, validates account state, writes to the orders ledger, then publishes fills to <arch-ref to="svc-settle" role="uses">Settlement Service</arch-ref>.</p>' },
+  { slug: 'svc-settle', title: 'Settlement Service', type: 'service', parent: 'svc',
+    properties: { language: 'Go', platform: 'AWS ECS Fargate' },
+    html: '<p>Settles filled orders against the <arch-ref to="svc-ledger">Ledger</arch-ref>.</p>' },
+  { slug: 'svc-ledger', title: 'Ledger', type: 'service', parent: 'svc',
+    properties: { language: 'Go', platform: 'AWS ECS Fargate' } },
+
+  { slug: 'int', title: 'Integrations', type: 'integration', parent: null },
+  { slug: 'integration-plaid', title: 'Plaid Webhook', type: 'integration', parent: 'int',
+    tags: ['webhook', 'inbound'],
+    properties: { vendor: 'Plaid', direction: 'inbound', secret: 'sec-stripe' },
+    html: '<p>Inbound webhook from Plaid carrying account-link and transaction events. Payload signed with HMAC-SHA256.</p>' },
+  { slug: 'int-stripe', title: 'Stripe Subscriptions', type: 'integration', parent: 'int',
+    properties: { vendor: 'Stripe', direction: 'outbound' } },
+
+  { slug: 'cloud', title: 'Cloud Accounts', type: 'cloud', parent: null },
+  { slug: 'acct-prod', title: 'Production AWS', type: 'cloud', parent: 'cloud',
+    tags: ['aws', 'us-east-1'],
+    properties: { provider: 'AWS', 'account-id': '123456789012', region: 'us-east-1' },
+    html: '<p>Primary production AWS account housing customer-facing infrastructure.</p>' },
+  { slug: 'infra-prod', title: 'Infrastructure', type: 'infra', parent: 'acct-prod',
+    html: '<p>Container for all infrastructure inside <arch-ref to="acct-prod">Production AWS</arch-ref>.</p>' },
+  { slug: 'ing-prod', title: 'Ingresses', type: 'infra', parent: 'infra-prod' },
+  { slug: 'ing-api', title: 'api.acme.com', type: 'ingress', parent: 'ing-prod',
+    deck: 'The public HTTPS entrypoint for the Acme trading API.',
+    tags: ['prod', 'tier-0'],
+    properties: { domain: 'api.acme.com', protocol: 'https', tls: true, 'routes-to': ['svc-order'] },
+    html: '<p>Public HTTPS entry point. TLS terminates at an ALB in <arch-ref to="acct-prod">Production AWS</arch-ref> and forwards to <arch-ref to="svc-order" role="routes-to">Order Engine</arch-ref>. All inbound requests carry a JWT issued by <arch-ref to="auth-jwt">Auth0 RS256</arch-ref>.</p><p>The certificate is rotated by ACM; cert lives at <arch-ref to="cert-acme">cert-acme-wildcard</arch-ref>. Domain delegation comes from <arch-ref to="domain-acme">acme.com</arch-ref>. Access logs flow into <arch-ref to="log-access">CloudTrail · prod</arch-ref>.</p>' },
+  { slug: 'ing-app', title: 'app.acme.com', type: 'ingress', parent: 'ing-prod',
+    properties: { domain: 'app.acme.com', protocol: 'https', tls: true, 'routes-to': ['svc-order'] },
+    html: '<p>Customer-portal HTTPS ingress, terminating at the same ALB cluster as <arch-ref to="ing-api">api.acme.com</arch-ref>.</p>' },
+  { slug: 'egr-prod', title: 'Egresses', type: 'egress', parent: 'infra-prod' },
+  { slug: 'net-prod', title: 'Networking', type: 'infra', parent: 'infra-prod' },
+  { slug: 'log-access', title: 'CloudTrail · prod', type: 'infra', parent: 'infra-prod',
+    tags: ['cloudtrail', 'siem'],
+    html: '<p>Organization-wide CloudTrail covering all API activity in production AWS.</p>' },
+  { slug: 'dom-prod', title: 'Domain Names', type: 'infra', parent: 'infra-prod' },
+  { slug: 'domain-acme', title: 'acme.com', type: 'domain', parent: 'dom-prod',
+    tags: ['apex', 'route53', 'public'],
+    properties: { registrar: 'AWS Route53', 'zone-id': 'Z3ABCD1234EFGH' },
+    html: '<p>Apex domain for the Acme trading platform. Delegated to AWS Route53. Used by <arch-ref to="ing-api">api.acme.com</arch-ref> and sibling ingresses.</p>' },
+  { slug: 'db-prod', title: 'Databases', type: 'infra', parent: 'infra-prod' },
+  { slug: 'sec-prod', title: 'Secrets', type: 'infra', parent: 'infra-prod',
+    html: '<p>Production secrets, including <arch-ref to="cert-acme">cert-acme-wildcard</arch-ref> and <arch-ref to="sec-stripe">plaid-webhook-secret</arch-ref>.</p>' },
+  { slug: 'sec-stripe', title: 'plaid-webhook-secret', type: 'secret', parent: 'sec-prod',
+    tags: ['hmac', 'plaid'],
+    properties: { kind: 'HMAC shared secret', rotated: 'manually, 90 days', 'stored-in': 'sec-prod' },
+    html: '<p>Shared HMAC secret used to verify the authenticity of inbound <arch-ref to="integration-plaid">Plaid Webhook</arch-ref> calls.</p>' },
+  { slug: 'cert-acme', title: 'cert-acme-wildcard', type: 'secret', parent: 'sec-prod',
+    tags: ['acm', 'auto-renew', 'wildcard'],
+    properties: { kind: 'TLS X.509 certificate', rotated: 'every 13 months · automatic', 'stored-in': 'sec-prod' },
+    html: '<p>Wildcard certificate covering all subdomains of <arch-ref to="domain-acme">acme.com</arch-ref>.</p>' },
+  { slug: 'acct-staging', title: 'Staging AWS', type: 'cloud', parent: 'cloud',
+    properties: { provider: 'AWS', 'account-id': '987654321098', region: 'us-east-1' } },
+
+  { slug: 'authz', title: 'Authorization', type: 'auth', parent: null,
+    html: '<p>Coarse-grained authorization across services. Token claims drive resource scope.</p>' },
+  { slug: 'authn', title: 'Authentication', type: 'auth', parent: null },
+  { slug: 'auth-pwd', title: 'Password Policy', type: 'auth', parent: 'authn',
+    properties: { algorithm: 'argon2id', issuer: 'acme' } },
+  { slug: 'auth-jwt', title: 'Auth0 RS256', type: 'auth', parent: 'authn',
+    tags: ['jwt', 'rs256', 'auth0'],
+    properties: { algorithm: 'RS256', issuer: 'https://acme.us.auth0.com/' },
+    html: '<p>JWT bearer policy used by all public ingresses including <arch-ref to="ing-api">api.acme.com</arch-ref>.</p>' },
+];

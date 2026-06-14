@@ -1,0 +1,31 @@
+{
+  "name": "architecture-notebook",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "author": "Sammons Software LLC",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "node --watch --experimental-strip-types --no-warnings server/index.ts",
+    "dev:web": "node scripts/copy-static.mjs && esbuild web/main.ts --bundle --format=esm --platform=browser --target=es2022 --sourcemap --watch --outfile=web/dist/main.js",
+    "build:web": "esbuild web/main.ts --bundle --format=esm --platform=browser --target=es2022 --minify --outfile=web/dist/main.js && node scripts/copy-static.mjs",
+    "build": "node --run build:web",
+    "test": "node --test --experimental-strip-types --no-warnings test/*.test.ts",
+    "test:watch": "node --test --watch --experimental-strip-types --no-warnings test/*.test.ts",
+    "test:integration": "node --test --experimental-strip-types --no-warnings --test-timeout=600000 test/integration/*.test.ts",
+    "seed": "node --experimental-strip-types --no-warnings server/seed.ts",
+    "seed:self": "node --experimental-strip-types --no-warnings server/seed-self.ts"
+  },
+  "dependencies": {
+    "lit": "^3.2.1",
+    "@lit-labs/signals": "^0.1.2"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "@types/node": "^24.0.0"
+  }
+}

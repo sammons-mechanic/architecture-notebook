@@ -1,0 +1,96 @@
+/* ───────────── History view ───────────── */
+.history-shell {
+  padding: 3.5rem 3rem 8rem;
+  max-width: 56rem;
+  margin: 0 auto;
+  animation: fadeUp 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.history-eyebrow {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-bottom: 0.6rem;
+}
+.history-title {
+  font-size: 3rem;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+.history-subtitle {
+  font-size: 1.05rem;
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+}
+.history-meta {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.2rem;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+.history-meta b { color: var(--text); font-weight: 500; margin-left: 0.4rem; }
+.history-loading, .history-empty {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding: 1.2rem 0;
+}
+.history-list { list-style: none; margin: 0; padding: 0; }
+.history-row {
+  display: grid;
+  grid-template-columns: 4rem 1fr auto auto auto;
+  align-items: baseline;
+  gap: 0.9rem;
+  padding: 0.55rem 0.7rem;
+  margin: 0 -0.7rem;
+  cursor: pointer;
+  border-radius: 5px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.history-row:hover { background: var(--bg-soft); }
+.history-num {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  color: var(--text-faint);
+}
+.history-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.history-section {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text);
+}
+.history-msg {
+  font-size: 0.84rem;
+  color: var(--text-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.history-msg em { color: var(--text-faint); font-style: normal; }
+.history-rev {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.history-author {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--text);
+}
+.history-time {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--text-faint);
+}
