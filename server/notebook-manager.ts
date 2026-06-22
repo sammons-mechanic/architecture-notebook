@@ -98,19 +98,42 @@ export const create_notebook_manager = async (options: ManagerOptions): Promise<
     return { slug, db, idempotency, router };
   };
 
-  if (!in_memory && existsSync(options.data_dir)) {
+  // Open the on-disk db for `slug` and register it in the live set.
+  const load_entry = (slug: string): NotebookEntry => {
+    const entry = open_entry(slug, path_for(options.data_dir, slug));
+    entries.set(slug, entry);
+    summaries.set(slug, build_summary(slug, entry.db, path_for(options.data_dir, slug)));
+    return entry;
+  };
+
+  // Pick up any `<slug>.db` files on disk that aren't open yet. Run at startup
+  // and again on every list() so a notebook created out-of-band — a seed
+  // script, another process, a restored backup — surfaces without a restart.
+  const scan_disk = async (): Promise<void> => {
+    if (in_memory || !existsSync(options.data_dir)) return;
     const files = await readdir(options.data_dir);
     for (const file of files) {
       if (!file.endsWith('.db')) continue;
       const slug = file.slice(0, -3);
-      if (!SLUG_REGEX.test(slug)) continue;
-      const entry = open_entry(slug, path_for(options.data_dir, slug));
-      entries.set(slug, entry);
-      summaries.set(slug, build_summary(slug, entry.db, path_for(options.data_dir, slug)));
+      if (!SLUG_REGEX.test(slug) || entries.has(slug)) continue;
+      load_entry(slug);
     }
-  }
+  };
+
+  // Lazily adopt a single notebook whose db file exists on disk but isn't open
+  // yet. Synchronous so get()/exists()/summary() stay sync on the request path.
+  const ensure_loaded = (slug: string): NotebookEntry | null => {
+    const open = entries.get(slug);
+    if (open) return open;
+    if (in_memory || !SLUG_REGEX.test(slug)) return null;
+    if (!existsSync(path_for(options.data_dir, slug))) return null;
+    return load_entry(slug);
+  };
+
+  await scan_disk();
 
   const list = async () => {
+    await scan_disk();
     const out: NotebookSummary[] = [];
     for (const [slug, entry] of entries) {
       out.push(build_summary(slug, entry.db, in_memory ? null : path_for(options.data_dir, slug)));
@@ -118,16 +141,17 @@ export const create_notebook_manager = async (options: ManagerOptions): Promise<
     return out.sort((a, b) => a.slug.localeCompare(b.slug));
   };
 
-  const get = (slug: string) => entries.get(slug) ?? null;
+  const get = (slug: string) => ensure_loaded(slug);
   const summary = (slug: string) => {
-    const entry = entries.get(slug);
+    const entry = ensure_loaded(slug);
     return entry ? build_summary(slug, entry.db, in_memory ? null : path_for(options.data_dir, slug)) : null;
   };
-  const exists = (slug: string) => entries.has(slug);
+  const exists = (slug: string) => ensure_loaded(slug) !== null;
 
   const create = (slug: string, title: string): NotebookSummary => {
     if (!SLUG_REGEX.test(slug)) throw new Error('slug-invalid');
-    if (entries.has(slug)) throw new Error('slug-conflict');
+    const conflict = in_memory ? entries.has(slug) : ensure_loaded(slug) !== null;
+    if (conflict) throw new Error('slug-conflict');
     const db_path = in_memory ? ':memory:' : path_for(options.data_dir, slug);
     const entry = open_entry(slug, db_path);
     entry.db.prepare("UPDATE meta SET value = ? WHERE key = 'notebook_title'").run(title);
@@ -137,7 +161,7 @@ export const create_notebook_manager = async (options: ManagerOptions): Promise<
   };
 
   const remove = async (slug: string): Promise<boolean> => {
-    const entry = entries.get(slug);
+    const entry = ensure_loaded(slug);
     if (!entry) return false;
     // Sweep peer refs FIRST while the notebook is still registered; the
     // peers don't need the doomed DB for the sweep (their refs table

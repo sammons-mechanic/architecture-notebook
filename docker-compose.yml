@@ -1,0 +1,23 @@
+# Architecture Notebook — one-command local quickstart.
+#
+#   docker compose up -d   →   http://127.0.0.1:8787
+#
+# Builds the image from this repo's Dockerfile (deps are installed during the
+# build) and persists your notebooks in ./data. Published on loopback only:
+# the server has no auth, so it stays off your network. For a real
+# multi-machine deployment, use the Tailscale setup in the README instead.
+
+services:
+  notebook:
+    build:
+      context: .
+    image: architecture-notebook:local
+    container_name: architecture-notebook
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8787:8787"
+    volumes:
+      - ./data:/data
+    environment:
+      PORT: "8787"
+      LOG_LEVEL: info

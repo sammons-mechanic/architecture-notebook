@@ -339,6 +339,28 @@ Arch-Author: claude
 
 ---
 
+## 9. Author section HTML as a designed artifact
+
+A section's `html` renders **verbatim** — the UI mounts it unescaped and `/print` embeds it straight into the PDF — inside a `.prose` container. **Any HTML tag is allowed** (`<table>`, `<div>`, `<svg>`, `<ul>`, `<h2>`, `<dl>`, …); `.prose` simply ships default styling for `<p>`, `<h3>`, `<code>`, and `<blockquote>`, and leaves everything else to render with browser defaults plus whatever styles *you* supply. So a `<table>` or a `<div>` diagram is unstyled until you style it. **Use that.** A good architecture notebook is not walls of prose; it is a set of legible, designed artifacts. Lean hard into structured, stylized blocks:
+
+- **Tables for anything tabular.** Endpoint catalogs, field specs, capacity/SLA numbers, option comparisons, sequence steps, ownership matrices — author a real `<table>`, not a paragraph that lists them. A reader should scan, not parse sentences.
+- **Data models as structured blocks.** Render an entity or schema as a styled table or definition list: field, type, constraints, default, notes. Make the shape of the data visible at a glance. For request/response shapes, a two-column "field → meaning" block beats prose every time.
+- **Architecture renderings, not descriptions.** When you describe topology or flow, *draw* it: a styled box-and-arrow layout built from nested `<div>`s (flex/grid), or inline `<svg>` for boxes, lanes, and edges. Label the boxes; show the direction of calls. One diagram replaces three paragraphs.
+- **Keep cross-links live inside the visuals.** Put `<arch-ref to="…">` tags inside table cells and diagram labels so the graph stays connected even in your richest blocks — the ref parser scans the entire `html`.
+
+### Theming — cohesive and on-brand
+
+Treat the whole notebook as one designed document, not a pile of mismatched pages. This matters as much as the content.
+
+- **Establish a small visual system once, then reuse it.** One table style, one diagram convention (same box treatment, same arrow semantics), one spacing rhythm, one restrained palette. Define it in your first section and repeat it in every section after — consistency is what makes a notebook read as *authored* rather than assembled.
+- **Stay on the user's brand.** Match their colors, typographic feel, and voice. If you don't know the brand, infer it from existing sections (or ask) before inventing one — then hold the line across every section.
+- **Harmonize with the app; don't fight it.** The app defines theme tokens globally — `--accent`, `--text-muted`, `--border`, `--bg-soft`, `--bg`, `--text` — and they **inherit into your authored HTML**, so reference them directly in inline styles (`style="border:1px solid var(--border)"`) and your blocks sit naturally inside the surrounding chrome instead of clashing. Each section type's `color` is also exposed as `var(--type-<slug>)` (e.g. `var(--type-service)`); give it a fallback, since a freshly created type's variable may not be present yet: `var(--type-service, var(--border))`. Content renders unsanitized into the **shared page DOM** (there is no shadow root or scope boundary), so *you* supply the styling — using inline `style=` attributes only. Do **not** emit a `<style>` block or lean on class selectors: they apply globally and leak into every other section and the app chrome. Inline styles are the only self-contained, leak-proof option. (`<script>` tags won't run — they're inert when inserted this way — so don't reach for them.)
+- **Cohesive ≠ loud.** Aim for legible and quiet: enough contrast, generous whitespace, restrained color. It must also survive `/print` — no reliance on hover, no fixed positioning, no dark-only colors.
+
+The bar: a stranger should be able to open any one section and understand that slice of the system from its visuals alone — and the tenth section should look like it was designed by the same hand as the first.
+
+---
+
 ## Contract corners
 
 Non-obvious surfaces you'll trip over if you don't read this list.
@@ -556,3 +578,4 @@ See `design/api.md` §8 for the canonical list:
 5. ✅ For 412: refetch, merge, retry with new `If-Match` and fresh `Idempotency-Key`.
 6. ✅ For 422 with `hint`: follow the hint URL before retrying.
 7. ✅ Never construct numbers (`1.2.3`) in writes — they're computed.
+8. ✅ Section `html` is a designed, on-brand artifact — tables / data-model blocks / inline diagrams, styled inline (§9), not a wall of prose.

@@ -28,13 +28,14 @@ pnpm dev:web      # esbuild watch: web/main.ts → web/dist/main.js (separate te
 
 Open the URL printed in `data/.port`. The server hosts a catalog of notebooks under `data/notebooks/`; create one from the landing page or via the API.
 
-Or with Docker:
+Or with Docker — one command:
 
 ```bash
-docker build -t architecture-notebook .
-docker run --rm -p 8787:8787 -v "$PWD/data:/data" architecture-notebook
-# → http://127.0.0.1:8787
+docker compose up -d        # builds the image, serves on http://127.0.0.1:8787, persists ./data
+docker compose down         # stop
 ```
+
+`docker-compose.yml` publishes on loopback only (`127.0.0.1`), since the server has no auth. For a real multi-machine deployment, use the Tailscale setup below instead.
 
 Tests: `pnpm test` (unit + API), `pnpm test:integration` (builds the Docker image and exercises the running container).
 

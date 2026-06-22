@@ -6,3 +6,4 @@ shots/
 .DS_Store
 *.log
 worktree-description.md
+.env
